@@ -22,10 +22,10 @@ window.formToDiscussions = [
               '<p>To wiki: {{#input}}wikiTo|de.community{{/input}}</p>' + 
               '<p>Comment: {{#textarea}}comment|Enter a comment here --> & gl{{/textarea}}</p>' + 
               '<p>{{#submit}}Submit{{/submit}}<br/>Clicking \'Submit\' will create a post on Discussions.</p>',
-        discussionsCategory: 3050708495944059381,
+        discussionsCategory: '3050708495944059381',
         discussionsTitle: 'ILL: {{wikiFrom}} to {{wikiTo}}',
         discussionsContent: 'A request was submitted by {{username}} to link two wikis.\n\n' + 
-                            '{{wikiFrom}} to {{wikiTo}}' +
+                            '{{wikiFrom}} to {{wikiTo}}\n' +
                             'Link: https://community.wikia.com/wiki/Special:InterwikiEdit?action=Link&wikia={{wikiFrom}}.wikia.com&ext_wikia={{wikiTo}}.wikia.com',
         customMustache: {
             intro: 'This form is to request the setup of interwiki/interlanguage links between 2 or more wikis.'
@@ -61,7 +61,7 @@ require([
                 if (params.length === 2)
                     placeholder = mw.html.escape(params[1]);
                 
-                return '<input class="FTD-input" id="' + id + '" placeholder="' + placeholder + '" />';
+                return '<input class="FTD-data FTD-input" id="' + id + '" placeholder="' + placeholder + '" />';
             };
         },
 
@@ -79,7 +79,7 @@ require([
                 if (params.length === 2)
                     placeholder = mw.html.escape(params[1]);
 
-                return '<textarea class="FTD-textarea" id="' + id + '" placeholder="' + placeholder + '" />';
+                return '<textarea class="FTD-data FTD-textarea" id="' + id + '" placeholder="' + placeholder + '" />';
             };
         },
 
@@ -125,8 +125,16 @@ require([
 
     ftd.enableButtons = function(options) {
         $('#FormToDiscussions-' + options.id).on('click', '#submit', function() {
-            console.log('Clicked');
-            ftd.postContent(options.discussionsCategory, options.discussionsTitle, options.discussionsContent);
+            var formVariables = {
+                username: mw.config.get('wgUserName')
+            };
+
+            $('#FormToDiscussions-' + options.id + ' .FTD-data ').each(function (i, item) {
+                formVariables[item.id] = $(item).val();
+            });
+            var title = Mustache.render(options.discussionsTitle, formVariables);
+            var content = Mustache.render(options.discussionsContent, formVariables);
+            ftd.postContent(options.discussionsCategory, title, content);
         });
     };
 
