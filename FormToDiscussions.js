@@ -13,8 +13,12 @@
 window.formToDiscussions = [
     {
         id: 'test',
-        specialPage: 'DiscussionsForm'
+        specialPage: 'DiscussionsForm',
+        specialPageTitle: 'Interlanguage link requests',
+        form: 'Insert form here',
+        format: 'Insert Discussions format here'
     }
+
 ];
 
 require([
@@ -29,22 +33,48 @@ require([
     ftd.options = window.formToDiscussions;
     if (ftd.options.length === 0) return;
 
-    ftd.initForm = function (options) {
 
+    /**
+     * Embeds a form into the div
+     * @param {Object} options options for the form to be placed
+     */
+    ftd.initForm = function (options) {
+        var location = $('#FormToDiscussions-' + options.id);
+        console.log(options);
+        location.append(options.form);
     };
     
-    // Only load the form on the page when the div (with ID) exists
-    ftd.options.forEach(function(formOptions) {
-        if (!formOptions.id) return;
-        if (formOptions.specialPage) {
-            if (mw.config.get('wgCanonicalNamespace') === 'Special' && 
-                mw.config.get('wgPageName') === formOptions.specialPage) {
-                console.log('Form loaded on Special page: ' + formOptions.id);
+    /**
+     * Start the script - calls loadForm on all forms that 
+     * should exist on the current page
+     */
+    ftd.init = function () {
+        // Only load the form on the page when the div (with ID) exists
+        // If it isn't a special page, insert multiple forms
+        ftd.options.forEach(function (formOptions) {
+            if (!formOptions.id || !formOptions.form) {
+                console.warn('FormToDiscussions: You must provide an ID and the form code to use this script.');
+                return;
             }
-        }
-        if ($('#FormToDiscussions-' + formOptions.id).length !== 0) {
-            console.log('Form loaded in div: ' + formOptions.id);
-            ftd.initForm(formOptions);
-        }
-    });
+            // For special pages, make some interface changes
+            if (formOptions.specialPage) {
+                if (mw.config.get('wgCanonicalNamespace') === 'Special' && mw.config.get('wgTitle') === formOptions.specialPage) {
+                    if (!formOptions.specialPageTitle) {
+                        formOptions.specialPageTitle = 'Post to Discussions';
+                    }
+                    $('h1.page-header__title').text(formOptions.specialPageTitle);
+                    document.title = formOptions.specialPageTitle + ' | ' + mw.config.get('wgSiteName') + ' | FANDOM powered by Wikia';
+                    $('#WikiaArticle').empty().append($('<div/>', {
+                        id: 'FormToDiscussions-' + formOptions.id
+                    }));
+                }
+            }
+            // Load the (latest) form
+            if ($('#FormToDiscussions-' + formOptions.id).length !== 0) {
+                ftd.initForm(formOptions);
+            }
+        });
+    }
+
+    ftd.init();
 });
