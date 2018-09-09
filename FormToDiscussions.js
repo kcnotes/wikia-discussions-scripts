@@ -12,6 +12,9 @@
  * @author Noreplyz
  */
 
+/**
+ * Sample input to FormToDiscussions
+ */
 window.formToDiscussions = [
     {
         id: 'test',
@@ -46,6 +49,14 @@ require([
     ftd.options = window.formToDiscussions;
     if (!ftd.options || ftd.options.length === 0) return;
 
+    /**
+     * Configuration data
+     */
+    ftd.config = {
+        siteId: mw.config.get('wgCityId')
+    };
+
+    // Helper variables for form template
     ftd.mustacheFormElements = {
         // {{#input}}id|placeholder{{/input}}
         input: function () {
@@ -83,7 +94,7 @@ require([
             };
         },
 
-        // {{submit}}
+        // {{#submit}}buttonText{{/submit}}
         submit: function () {
             return function (text, render) {
                 return '<button class="FTD-button" id="submit">' + render(text) + '</button>';
@@ -91,10 +102,12 @@ require([
         }
     };
 
-    ftd.config = {
-        siteId: mw.config.get('wgCityId')
-    };
-
+    /**
+     * Posts contents directly into Discussions, into a particular category
+     * @param {String} category the category ID
+     * @param {String} title    the title text for the post
+     * @param {String} content  the body text for the post
+     */
     ftd.postContent = function (category, title, content) {
         return $.ajax({
             url: 'https://services.wikia.com/discussion/' + ftd.config.siteId + '/forums/' + category + '/threads',
@@ -115,14 +128,20 @@ require([
     };
 
     /**
-     * Parses the Mustache template
-     * @param {*} rawForm 
+     * Parses the raw form template
+     * @param {String} rawForm      the raw form
+     * @param {Object} extraOptions external variables supplied by the user
+     * @return a HTML string containing the form contents. Content is not sanitised automatically
      */
     ftd.parseForm = function(rawForm, extraOptions) {
         return Mustache.render(rawForm, 
             Object.assign({}, ftd.mustacheFormElements, extraOptions));
     };
 
+    /**
+     * Enables the form buttons
+     * @param {Object} options the options for the particular form
+     */
     ftd.enableButtons = function(options) {
         $('#FormToDiscussions-' + options.id).on('click', '#submit', function() {
             var formVariables = {
@@ -139,7 +158,7 @@ require([
     };
 
     /**
-     * Embeds a form into the div
+     * Embeds a form into the div, and allows the form to work
      * @param {Object} options options for the form to be placed
      */
     ftd.initForm = function (options) {
