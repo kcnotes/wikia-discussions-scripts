@@ -20,13 +20,17 @@ window.formToDiscussions = [
         form: '{{intro}}' +
               '<p>From wiki: {{#input}}wikiFrom|community{{/input}}</p>' + 
               '<p>To wiki: {{#input}}wikiTo|de.community{{/input}}</p>' + 
-              '<p>Comment: {{#textarea}}comment|Enter a comment here --> & gl{{/textarea}}</p>',
-        format: 'Insert Discussions format here',
+              '<p>Comment: {{#textarea}}comment|Enter a comment here --> & gl{{/textarea}}</p>' + 
+              '<p>{{#submit}}Submit{{/submit}}<br/>Clicking \'Submit\' will create a post on Discussions.</p>',
+        discussionsCategory: 3050708495944059381,
+        discussionsTitle: 'ILL: {{wikiFrom}} to {{wikiTo}}',
+        discussionsContent: 'A request was submitted by {{username}} to link two wikis.\n\n' + 
+                            '{{wikiFrom}} to {{wikiTo}}' +
+                            'Link: https://community.wikia.com/wiki/Special:InterwikiEdit?action=Link&wikia={{wikiFrom}}.wikia.com&ext_wikia={{wikiTo}}.wikia.com',
         customMustache: {
-            intro: 'This page is to request the setup of interwiki/interlanguage links between 2 or more wikis.'
+            intro: 'This form is to request the setup of interwiki/interlanguage links between 2 or more wikis.'
         }
     }
-
 ];
 
 require([
@@ -36,14 +40,15 @@ require([
     'wikia.mustache'
 ], function (window, $, mw, Mustache) {
     'use strict';
+
     // Load form in places where it is required
     var ftd = {};
     ftd.options = window.formToDiscussions;
-    if (ftd.options.length === 0) return;
+    if (!ftd.options || ftd.options.length === 0) return;
 
-    var mustacheFormElements = {
+    ftd.mustacheFormElements = {
         // {{#input}}id|placeholder{{/input}}
-        input: function() {
+        input: function () {
             return function(text) {
                 text = text.trim();
                 if (text === '')
@@ -77,6 +82,36 @@ require([
                 return '<textarea class="FTD-textarea" id="' + id + '" placeholder="' + placeholder + '" />';
             };
         },
+
+        // {{submit}}
+        submit: function () {
+            return function (text, render) {
+                return '<button class="FTD-button" id="submit">' + render(text) + '</button>';
+            };
+        }
+    };
+
+    ftd.config = {
+        siteId: mw.config.get('wgCityId')
+    };
+
+    ftd.postContent = function (category, title, content) {
+        return $.ajax({
+            url: 'https://services.wikia.com/discussion/' + ftd.config.siteId + '/forums/' + category + '/threads',
+            type: 'POST',
+            crossDomain: true,
+            xhrFields: {
+                withCredentials: true
+            },
+            data: JSON.stringify({
+                title: title,
+                body: content,
+                source: 'UNCATEGORIZED',
+                funnel: 'TEXT',
+                siteId: ftd.config.siteId
+            }),
+            contentType: 'application/json'
+        });
     };
 
     /**
@@ -85,7 +120,14 @@ require([
      */
     ftd.parseForm = function(rawForm, extraOptions) {
         return Mustache.render(rawForm, 
-            Object.assign({}, mustacheFormElements, extraOptions));
+            Object.assign({}, ftd.mustacheFormElements, extraOptions));
+    };
+
+    ftd.enableButtons = function(options) {
+        $('#FormToDiscussions-' + options.id).on('click', '#submit', function() {
+            console.log('Clicked');
+            ftd.postContent(options.discussionsCategory, options.discussionsTitle, options.discussionsContent);
+        });
     };
 
     /**
@@ -97,6 +139,7 @@ require([
         console.log(options);
         var parsedForm = ftd.parseForm(options.form, options.customMustache);
         location.append(parsedForm);
+        ftd.enableButtons(options);
     };
     
     /**
