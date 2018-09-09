@@ -5,6 +5,8 @@
  * A way of creating a form that posts to Discussions. 
  * Designed to be easy to create your own special form for your custom needs!
  * 
+ * Please test this script on a test wiki before implementing it on your own.
+ * 
  * Usage: 
  * Coming soon
  * @author Noreplyz
@@ -15,7 +17,9 @@ window.formToDiscussions = [
         id: 'test',
         specialPage: 'DiscussionsForm',
         specialPageTitle: 'Interlanguage link requests',
-        form: 'Insert form here',
+        form: '<p>From wiki: {{#input}}wikiFrom|community{{/input}}</p>' + 
+              '<p>To wiki: {{#input}}wikiTo|de.community{{/input}}</p>' + 
+              '<p>Comment: {{#textarea}}comment|Enter a comment here --> & gl{{/textarea}}</p>',
         format: 'Insert Discussions format here'
     }
 
@@ -33,6 +37,51 @@ require([
     ftd.options = window.formToDiscussions;
     if (ftd.options.length === 0) return;
 
+    var mustacheFormElements = {
+        // {{#input}}id|placeholder{{/input}}
+        input: function() {
+            return function(text) {
+                text = text.trim();
+                if (text === '')
+                    return 'Parse error: &lt;input&gt; tag had no ID.<br/>';
+
+                var params = text.split('|'),
+                    id = mw.html.escape(params[0]),
+                    placeholder = '';
+                
+                if (params.length === 2)
+                    placeholder = mw.html.escape(params[1]);
+                
+                return '<input class="FTD-input" id="' + id + '" placeholder="' + placeholder + '" />';
+            };
+        },
+
+        // {{#textarea}}id|placeholder{{/textarea}}
+        textarea: function () {
+            return function (text) {
+                text = text.trim();
+                if (text === '')
+                    return 'Parse error: &lt;input&gt; tag had no ID.<br/>';
+
+                var params = text.split('|'),
+                    id = mw.html.escape(params[0]),
+                    placeholder = '';
+
+                if (params.length === 2)
+                    placeholder = mw.html.escape(params[1]);
+
+                return '<textarea class="FTD-input" id="' + id + '" placeholder="' + placeholder + '" />';
+            };
+        },
+    };
+
+    /**
+     * Parses the Mustache template
+     * @param {*} rawForm 
+     */
+    ftd.parseForm = function(rawForm) {
+        return Mustache.render(rawForm, mustacheFormElements);
+    };
 
     /**
      * Embeds a form into the div
@@ -41,7 +90,8 @@ require([
     ftd.initForm = function (options) {
         var location = $('#FormToDiscussions-' + options.id);
         console.log(options);
-        location.append(options.form);
+        var parsedForm = ftd.parseForm(options.form);
+        location.append(parsedForm);
     };
     
     /**
@@ -74,7 +124,7 @@ require([
                 ftd.initForm(formOptions);
             }
         });
-    }
+    };
 
     ftd.init();
 });
