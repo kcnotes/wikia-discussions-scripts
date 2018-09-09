@@ -1,4 +1,4 @@
-/* global require, console */
+/* global require, console, alert */
 /**
  * <nowiki>
  * FormToDiscussions
@@ -6,9 +6,6 @@
  * Designed to be easy to create your own special form for your custom needs!
  * 
  * Please test this script on a test wiki before implementing it on your own.
- * 
- * Usage: 
- * Coming soon
  * @author Noreplyz
  */
 
@@ -32,6 +29,14 @@ window.formToDiscussions = [
                             'Link: https://community.wikia.com/wiki/Special:InterwikiEdit?action=Link&wikia={{wikiFrom}}.wikia.com&ext_wikia={{wikiTo}}.wikia.com',
         customMustache: {
             intro: 'This form is to request the setup of interwiki/interlanguage links between 2 or more wikis.'
+        },
+        submitCallback: function() {
+            'use strict';
+            alert('Successfully posted');
+        },
+        submitFailCallback: function() {
+            'use strict';
+            alert('Failed to submit');
         }
     }
 ];
@@ -153,7 +158,16 @@ require([
             });
             var title = Mustache.render(options.discussionsTitle, formVariables);
             var content = Mustache.render(options.discussionsContent, formVariables);
-            ftd.postContent(options.discussionsCategory, title, content);
+            if (title.length > 70) {
+                options.submitFailCallback();
+                return $.Deferred().reject({ error: 'Title is too long' });
+            }
+            ftd.postContent(options.discussionsCategory, title, content).then(function () {
+                options.submitCallback();
+                $('#FormToDiscussions-' + options.id + ' .FTD-data ').each(function (i, item) {
+                    $(item).val('');
+                });
+            }, options.submitFailCallback);
         });
     };
 
@@ -194,6 +208,11 @@ require([
                     }));
                 }
             }
+            // Cleanup optional submit callbacks
+            if (typeof formOptions.submitCallback !== 'function')
+                formOptions.submitCallback = function() {};
+            if (typeof formOptions.submitFailCallback !== 'function')
+                formOptions.submitFailCallback = function() {};
             // Load the (latest) form
             if ($('#FormToDiscussions-' + formOptions.id).length !== 0) {
                 ftd.initForm(formOptions);
