@@ -17,10 +17,14 @@ window.formToDiscussions = [
         id: 'test',
         specialPage: 'DiscussionsForm',
         specialPageTitle: 'Interlanguage link requests',
-        form: '<p>From wiki: {{#input}}wikiFrom|community{{/input}}</p>' + 
+        form: '{{intro}}' +
+              '<p>From wiki: {{#input}}wikiFrom|community{{/input}}</p>' + 
               '<p>To wiki: {{#input}}wikiTo|de.community{{/input}}</p>' + 
               '<p>Comment: {{#textarea}}comment|Enter a comment here --> & gl{{/textarea}}</p>',
-        format: 'Insert Discussions format here'
+        format: 'Insert Discussions format here',
+        customMustache: {
+            intro: 'This page is to request the setup of interwiki/interlanguage links between 2 or more wikis.'
+        }
     }
 
 ];
@@ -61,7 +65,7 @@ require([
             return function (text) {
                 text = text.trim();
                 if (text === '')
-                    return 'Parse error: &lt;input&gt; tag had no ID.<br/>';
+                    return 'Parse error: &lt;textarea&gt; tag had no ID.<br/>';
 
                 var params = text.split('|'),
                     id = mw.html.escape(params[0]),
@@ -70,7 +74,7 @@ require([
                 if (params.length === 2)
                     placeholder = mw.html.escape(params[1]);
 
-                return '<textarea class="FTD-input" id="' + id + '" placeholder="' + placeholder + '" />';
+                return '<textarea class="FTD-textarea" id="' + id + '" placeholder="' + placeholder + '" />';
             };
         },
     };
@@ -79,8 +83,9 @@ require([
      * Parses the Mustache template
      * @param {*} rawForm 
      */
-    ftd.parseForm = function(rawForm) {
-        return Mustache.render(rawForm, mustacheFormElements);
+    ftd.parseForm = function(rawForm, extraOptions) {
+        return Mustache.render(rawForm, 
+            Object.assign({}, mustacheFormElements, extraOptions));
     };
 
     /**
@@ -90,7 +95,7 @@ require([
     ftd.initForm = function (options) {
         var location = $('#FormToDiscussions-' + options.id);
         console.log(options);
-        var parsedForm = ftd.parseForm(options.form);
+        var parsedForm = ftd.parseForm(options.form, options.customMustache);
         location.append(parsedForm);
     };
     
